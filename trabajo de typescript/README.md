@@ -144,4 +144,4 @@ Este proyecto está bajo la licencia [MIT](LICENSE).
 
 ---
 
-<p align="center">Hecho con ❤️ por <a href="https://github.com/tu-usuario">Tu Nombre</a></p>
+<p align="center">Hecho con ❤️ por <a href="https://github.com/tu-usuario">David</a></p>
