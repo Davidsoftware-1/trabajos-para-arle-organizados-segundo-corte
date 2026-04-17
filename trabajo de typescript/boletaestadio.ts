@@ -1,16 +1,11 @@
+export {};
 // ============================================================
-//  SIMULACIÓN 5 — VENTA DE BOLETAS PARA EL ESTADIO — TypeScript
-//
-//  🔑 CAMBIOS CLAVE vs JavaScript:
-//  - interface: Zona, Comprador, Venta completamente tipados
-//  - NombreZona: union de literales para los nombres permitidos
-//  - Readonly<Zona> aplicado en buscarZona (no modifica la zona buscada)
-//  - Tipos de retorno explícitos en todas las funciones
+//  SIMULACIÓN 5 — VENTA DE BOLETAS PARA EL ESTADIO
+//  TypeScript estricto — Compatible con Bun
 // ============================================================
 
-// ── TIPOS Y INTERFACES ────────────────────────────────────────
+// ── TIPOS ────────────────────────────────────────────────────
 
-// Union de los nombres exactos de zonas → previene errores de tipeo
 type NombreZona =
   | "Norte (Popular)"
   | "Sur (Popular)"
@@ -19,40 +14,40 @@ type NombreZona =
   | "Palco VIP";
 
 interface Zona {
-  readonly id:   number;
-  nombre:        NombreZona;
-  precio:        number;
-  capacidad:     number;
-  vendidas:      number;      // aumenta con cada venta, disminuye al devolver
+  readonly id:       number;
+  readonly nombre:   NombreZona;
+  readonly precio:   number;
+  readonly capacidad: number;
+  vendidas:          number;
 }
 
 interface Comprador {
-  nombre:    string;
-  documento: string;
+  readonly nombre:    string;
+  readonly documento: string;
 }
 
 interface Venta {
-  readonly idVenta:   string;      // ej: "BOL-0001"
-  comprador:          Comprador;
-  zona:               NombreZona;
+  readonly idVenta:   string;
+  readonly comprador: Comprador;
+  readonly zona:      NombreZona;
   readonly idZona:    number;
-  cantidad:           number;
-  total:              number;
+  readonly cantidad:  number;
+  readonly total:     number;
   readonly fecha:     string;
 }
 
-// ── DATOS INICIALES ──────────────────────────────────────────
+// ── DATOS ────────────────────────────────────────────────────
 
 const zonas: Zona[] = [
-  { id: 1, nombre: "Norte (Popular)",     precio: 25000,  capacidad: 500, vendidas: 0 },
-  { id: 2, nombre: "Sur (Popular)",       precio: 25000,  capacidad: 500, vendidas: 0 },
-  { id: 3, nombre: "Occidental (Platea)", precio: 80000,  capacidad: 200, vendidas: 0 },
-  { id: 4, nombre: "Oriental (Platea)",   precio: 80000,  capacidad: 200, vendidas: 0 },
-  { id: 5, nombre: "Palco VIP",           precio: 180000, capacidad: 50,  vendidas: 0 },
+  { id: 1, nombre: "Norte (Popular)",     precio: 25_000,  capacidad: 500, vendidas: 0 },
+  { id: 2, nombre: "Sur (Popular)",       precio: 25_000,  capacidad: 500, vendidas: 0 },
+  { id: 3, nombre: "Occidental (Platea)", precio: 80_000,  capacidad: 200, vendidas: 0 },
+  { id: 4, nombre: "Oriental (Platea)",   precio: 80_000,  capacidad: 200, vendidas: 0 },
+  { id: 5, nombre: "Palco VIP",           precio: 180_000, capacidad: 50,  vendidas: 0 },
 ];
 
-let ventas: Venta[] = [];
-let contadorVentas:  number = 0;
+let ventas:         Venta[] = [];
+let contadorVentas  = 0;
 
 // ── UTILIDADES ───────────────────────────────────────────────
 
@@ -61,11 +56,9 @@ const formatearPrecio = (valor: number): string =>
 
 const ahora = (): string => new Date().toLocaleString("es-CO");
 
-// Retorna Zona | undefined: puede que el id no exista
 const buscarZona = (id: number): Zona | undefined =>
   zonas.find((z) => z.id === id);
 
-// Calcula disponibles; recibe Zona (no puede ser undefined)
 const disponiblesEnZona = (zona: Zona): number =>
   zona.capacidad - zona.vendidas;
 
@@ -75,32 +68,34 @@ const verDisponibilidad = (): void => {
   console.log("                 🏟️  ESTADIO — ZONAS                  ");
   console.log("════════════════════════════════════════════════════════");
 
-  // map: (z: Zona): string → retorno tipado explícito
   zonas
-    .map((z: Zona): string => {
-      const disponibles: number = disponiblesEnZona(z);
-      const estado: string = disponibles === 0 ? "⛔ AGOTADO" : `✅ ${disponibles} disp.`;
+    .map((z) => {
+      const disponibles = disponiblesEnZona(z);
+      const estado = disponibles === 0 ? "⛔ AGOTADO" : `✅ ${disponibles} disp.`;
       return (
         `  [${z.id}] ${z.nombre.padEnd(22)}  ${formatearPrecio(z.precio).padStart(10)}` +
         `  │  ${estado}`
       );
     })
-    .forEach((linea) => console.log(linea));
+    .forEach((l) => console.log(l));
 
   console.log("════════════════════════════════════════════════════════\n");
 };
 
 // ── 2. COMPRAR BOLETAS ───────────────────────────────────────
-const comprarBoletas = (comprador: Comprador, idZona: number, cantidad: number): void => {
-  const zona: Zona | undefined = buscarZona(idZona);
+const comprarBoletas = (
+  comprador: Comprador,
+  idZona: number,
+  cantidad: number
+): void => {
+  const zona = buscarZona(idZona);
 
-  // Después de esta guarda, TypeScript sabe que zona es Zona (no undefined)
-  if (!zona) {
+  if (zona === undefined) {
     console.log(`❌ Zona con id ${idZona} no existe.`);
     return;
   }
 
-  const disponibles: number = disponiblesEnZona(zona);
+  const disponibles = disponiblesEnZona(zona);
 
   if (disponibles === 0) {
     console.log(`❌ La zona "${zona.nombre}" está agotada.`);
@@ -115,14 +110,14 @@ const comprarBoletas = (comprador: Comprador, idZona: number, cantidad: number):
     return;
   }
 
-  const total: number = zona.precio * cantidad;
+  const total = zona.precio * cantidad;
   zona.vendidas += cantidad;
   contadorVentas++;
 
   const nuevaVenta: Venta = {
     idVenta:   `BOL-${String(contadorVentas).padStart(4, "0")}`,
     comprador,
-    zona:      zona.nombre,    // NombreZona (garantizado por el tipo de Zona)
+    zona:      zona.nombre,
     idZona:    zona.id,
     cantidad,
     total,
@@ -153,11 +148,11 @@ const verVentas = (): void => {
 
   ventas
     .map(
-      (v: Venta): string =>
+      (v) =>
         `  ${v.idVenta}  │  ${v.comprador.nombre.padEnd(18)}  │  ${v.zona.padEnd(22)}` +
         `  │  x${v.cantidad}  │  ${formatearPrecio(v.total)}`
     )
-    .forEach((linea) => console.log(linea));
+    .forEach((l) => console.log(l));
 
   console.log("════════════════════════════════════════════════════════\n");
 };
@@ -169,18 +164,11 @@ const reporteIngresos = (): void => {
     return;
   }
 
-  // map → number[] → reduce → number
-  const totales: number[] = ventas.map((v: Venta): number => v.total);
+  const ingresoTotal = ventas
+    .map((v) => v.total)
+    .reduce((acc, total) => acc + total, 0);
 
-  const ingresoTotal: number = totales.reduce(
-    (acc: number, total: number) => acc + total,
-    0
-  );
-
-  const boletasTotales: number = ventas.reduce(
-    (acc: number, v: Venta) => acc + v.cantidad,
-    0
-  );
+  const boletasTotales = ventas.reduce((acc, v) => acc + v.cantidad, 0);
 
   console.log("\n════════════════════════════════════════");
   console.log("         💰  REPORTE DE INGRESOS        ");
@@ -195,16 +183,11 @@ const reporteIngresos = (): void => {
 const reportePorZona = (): void => {
   console.log("\n📊 Ventas por zona:");
 
-  zonas.forEach((zona: Zona) => {
-    // filter: conserva solo las Venta cuyo idZona coincide
-    const ventasZona: Venta[] = ventas.filter((v) => v.idZona === zona.id);
+  zonas.forEach((zona) => {
+    const ventasZona = ventas.filter((v) => v.idZona === zona.id);
+    const ingresos   = ventasZona.reduce((acc, v) => acc + v.total, 0);
+    const ocupacion  = `${zona.vendidas}/${zona.capacidad}`;
 
-    const ingresos: number = ventasZona.reduce(
-      (acc: number, v: Venta) => acc + v.total,
-      0
-    );
-
-    const ocupacion = `${zona.vendidas}/${zona.capacidad}`;
     console.log(
       `   ${zona.nombre.padEnd(24)}  vendidas: ${ocupacion.padEnd(8)}  ingresos: ${formatearPrecio(ingresos)}`
     );
@@ -214,10 +197,7 @@ const reportePorZona = (): void => {
 
 // ── 6. BUSCAR POR COMPRADOR ──────────────────────────────────
 const buscarVentasPorComprador = (documento: string): void => {
-  // filter: Venta[] → Venta[] filtrando por documento del comprador
-  const misCompras: Venta[] = ventas.filter(
-    (v) => v.comprador.documento === documento
-  );
+  const misCompras = ventas.filter((v) => v.comprador.documento === documento);
 
   if (misCompras.length === 0) {
     console.log(`\n🔍 No se encontraron compras para el documento ${documento}.\n`);
@@ -235,39 +215,23 @@ const buscarVentasPorComprador = (documento: string): void => {
 
 // ── 7. DEVOLVER BOLETAS ──────────────────────────────────────
 const devolverBoletas = (idVenta: string): void => {
-  const venta: Venta | undefined = ventas.find((v) => v.idVenta === idVenta);
+  const venta = ventas.find((v) => v.idVenta === idVenta);
 
-  if (!venta) {
+  if (venta === undefined) {
     console.log(`❌ Venta ${idVenta} no encontrada.`);
     return;
   }
 
-  // buscarZona puede retornar undefined → verificamos
-  const zona: Zona | undefined = buscarZona(venta.idZona);
-  if (zona) {
+  const zona = buscarZona(venta.idZona);
+  if (zona !== undefined) {
     zona.vendidas -= venta.cantidad;
   }
 
-  // filter reconstruye el array sin la venta devuelta
   ventas = ventas.filter((v) => v.idVenta !== idVenta);
 
   console.log(`\n↩️  Devolución exitosa:`);
   console.log(`   ${venta.cantidad} boleta(s) de ${venta.zona} devuelta(s).`);
   console.log(`   Reembolso: ${formatearPrecio(venta.total)}\n`);
-};
-
-// ── MENÚ ─────────────────────────────────────────────────────
-const menu = (opcion: number): void => {
-  switch (opcion) {
-    case 1: verDisponibilidad(); break;
-    case 2: comprarBoletas({ nombre: "Ana Torres", documento: "111111" }, 1, 3); break;
-    case 3: verVentas(); break;
-    case 4: reporteIngresos(); break;
-    case 5: reportePorZona(); break;
-    case 6: buscarVentasPorComprador("111111"); break;
-    case 7: devolverBoletas("BOL-0001"); break;
-    default: console.log("❌ Opción no válida.");
-  }
 };
 
 // ── DEMOSTRACIÓN ─────────────────────────────────────────────

@@ -1,40 +1,30 @@
+export {};
 // ============================================================
-//  SIMULACIÓN 4 — DIGITURNO — TypeScript
-//
-//  🔑 CAMBIOS CLAVE vs JavaScript:
-//  - TipoTurno y EstadoTurno: union de literales (solo valores válidos)
-//  - TipoAtencion: define qué tipos puede atender cada módulo
-//  - Turno con horaFin opcional (?: significa que puede no existir aún)
-//  - readonly en ids para prevenir cambios accidentales
+//  SIMULACIÓN 4 — DIGITURNO
+//  TypeScript estricto — Compatible con Bun
 // ============================================================
 
-// ── TIPOS CON UNIONES DE LITERALES ──────────────────────────
-
-// Solo "Normal" o "Preferencial" son valores válidos de turno
-type TipoTurno = "Normal" | "Preferencial";
-
-// El estado avanza en este orden: Esperando → En atención → Atendido
+// ── TIPOS (unión de literales — práctica 2026) ────────────────
+type TipoTurno   = "Normal" | "Preferencial";
 type EstadoTurno = "Esperando" | "En atención" | "Atendido";
 
-// ── INTERFACES ───────────────────────────────────────────────
-
 interface Modulo {
-  readonly id:    number;
-  nombre:         string;
-  disponible:     boolean;
-  atiendeTipo:    TipoTurno[];     // array de tipos que puede atender
+  readonly id:          number;
+  readonly nombre:      string;
+  disponible:           boolean;
+  readonly atiendeTipo: TipoTurno[];
 }
 
 interface Turno {
-  readonly codigo: string;         // ej: "N-001", "P-002"
-  nombre:          string;
-  tipo:            TipoTurno;
-  horaLlegada:     string;
-  estado:          EstadoTurno;
-  horaFin?:        string;         // ?: opcional → solo existe al finalizar
+  readonly codigo:      string;
+  readonly nombre:      string;
+  readonly tipo:        TipoTurno;
+  readonly horaLlegada: string;
+  estado:               EstadoTurno;
+  horaFin?:             string;       // opcional: solo existe al finalizar
 }
 
-// ── DATOS INICIALES ──────────────────────────────────────────
+// ── DATOS ────────────────────────────────────────────────────
 
 const modulos: Modulo[] = [
   { id: 1, nombre: "Caja 1",      disponible: true,  atiendeTipo: ["Normal", "Preferencial"] },
@@ -42,45 +32,34 @@ const modulos: Modulo[] = [
   { id: 3, nombre: "Información", disponible: false, atiendeTipo: ["Normal", "Preferencial"] },
 ];
 
-let cola: Turno[] = [];
+let cola:               Turno[] = [];
 let historialAtendidos: Turno[] = [];
 
-let contadorNormal:       number = 0;
-let contadorPreferencial: number = 0;
+let contadorNormal       = 0;
+let contadorPreferencial = 0;
 
 // ── UTILIDADES ───────────────────────────────────────────────
 
 const horaActual = (): string => new Date().toLocaleTimeString("es-CO");
 
-// El parámetro tipo es TipoTurno, no cualquier string
 const generarCodigoTurno = (tipo: TipoTurno): string => {
   if (tipo === "Preferencial") {
     contadorPreferencial++;
     return `P-${String(contadorPreferencial).padStart(3, "0")}`;
-  } else {
-    contadorNormal++;
-    return `N-${String(contadorNormal).padStart(3, "0")}`;
   }
+  contadorNormal++;
+  return `N-${String(contadorNormal).padStart(3, "0")}`;
 };
 
 // ── 1. ASIGNAR TURNO ─────────────────────────────────────────
 const asignarTurno = (nombre: string, tipo: TipoTurno = "Normal"): void => {
-  // TypeScript garantiza que tipo es "Normal" | "Preferencial"
-  // La validación manual del JS ya no es necesaria aquí,
-  // pero la mantenemos para errores en tiempo de ejecución si llega
-  // un valor inesperado (ej: desde una API externa).
-  if (tipo !== "Normal" && tipo !== "Preferencial") {
-    console.log(`❌ Tipo de turno inválido.`);
-    return;
-  }
-
   const nuevoTurno: Turno = {
     codigo:      generarCodigoTurno(tipo),
     nombre,
     tipo,
     horaLlegada: horaActual(),
     estado:      "Esperando",
-    // horaFin no se asigna aquí → es undefined (campo opcional)
+    // horaFin no se asigna aquí (campo opcional)
   };
 
   cola.push(nuevoTurno);
@@ -95,10 +74,9 @@ const asignarTurno = (nombre: string, tipo: TipoTurno = "Normal"): void => {
 
 // ── 2. LLAMAR SIGUIENTE ──────────────────────────────────────
 const llamarSiguiente = (idModulo: number): void => {
-  // find retorna Modulo | undefined
-  const modulo: Modulo | undefined = modulos.find((m) => m.id === idModulo);
+  const modulo = modulos.find((m) => m.id === idModulo);
 
-  if (!modulo) {
+  if (modulo === undefined) {
     console.log(`❌ Módulo ${idModulo} no existe.`);
     return;
   }
@@ -111,25 +89,23 @@ const llamarSiguiente = (idModulo: number): void => {
     return;
   }
 
-  // filter retorna Turno[] con los preferenciales en espera
-  const preferenciales: Turno[] = cola.filter(
+  // Preferenciales tienen prioridad — filter retorna Turno[]
+  const preferenciales = cola.filter(
     (t) => t.tipo === "Preferencial" && t.estado === "Esperando"
   );
-
-  const normales: Turno[] = cola.filter(
+  const normales = cola.filter(
     (t) => t.tipo === "Normal" && t.estado === "Esperando"
   );
 
-  // Turno | undefined: puede que no haya ninguno
+  // noUncheckedIndexedAccess: [0] retorna T | undefined
   const turnoAAtender: Turno | undefined =
     preferenciales.length > 0 ? preferenciales[0] : normales[0];
 
-  if (!turnoAAtender) {
+  if (turnoAAtender === undefined) {
     console.log("⚠️  No hay turnos en espera.");
     return;
   }
 
-  // EstadoTurno garantiza que solo podemos asignar valores válidos
   turnoAAtender.estado = "En atención";
 
   console.log(`\n📢 ¡Turno llamado!`);
@@ -139,15 +115,15 @@ const llamarSiguiente = (idModulo: number): void => {
 
 // ── 3. FINALIZAR ATENCIÓN ────────────────────────────────────
 const finalizarAtencion = (codigoTurno: string): void => {
-  const turno: Turno | undefined = cola.find((t) => t.codigo === codigoTurno);
+  const turno = cola.find((t) => t.codigo === codigoTurno);
 
-  if (!turno) {
+  if (turno === undefined) {
     console.log(`❌ No se encontró el turno ${codigoTurno} en la cola.`);
     return;
   }
 
   turno.estado  = "Atendido";
-  turno.horaFin = horaActual();    // ahora asignamos el campo opcional
+  turno.horaFin = horaActual();    // ahora existe el campo opcional
 
   historialAtendidos.push(turno);
   cola = cola.filter((t) => t.codigo !== codigoTurno);
@@ -157,8 +133,8 @@ const finalizarAtencion = (codigoTurno: string): void => {
 
 // ── 4. VER COLA ──────────────────────────────────────────────
 const verCola = (): void => {
-  const enEspera:   Turno[] = cola.filter((t) => t.estado === "Esperando");
-  const enAtencion: Turno[] = cola.filter((t) => t.estado === "En atención");
+  const enEspera   = cola.filter((t) => t.estado === "Esperando");
+  const enAtencion = cola.filter((t) => t.estado === "En atención");
 
   console.log("\n════════════════════════════════════════");
   console.log("          🎫  COLA DE ESPERA           ");
@@ -171,13 +147,12 @@ const verCola = (): void => {
   if (cola.length === 0) {
     console.log("  (Cola vacía)");
   } else {
-    // map recibe (t: Turno, index: number): string
     cola
       .map(
-        (t: Turno, index: number): string =>
-          `  ${index + 1}. [${t.codigo}] ${t.nombre.padEnd(15)}  ${t.tipo.padEnd(14)}  ${t.estado}`
+        (t, i) =>
+          `  ${i + 1}. [${t.codigo}] ${t.nombre.padEnd(15)}  ${t.tipo.padEnd(14)}  ${t.estado}`
       )
-      .forEach((linea) => console.log(linea));
+      .forEach((l) => console.log(l));
   }
 
   console.log("════════════════════════════════════════\n");
@@ -195,16 +170,15 @@ const verHistorial = (): void => {
   console.log("════════════════════════════════════════");
 
   historialAtendidos
-    .map((t): string => `  [${t.codigo}] ${t.nombre.padEnd(15)}  ${t.tipo}`)
-    .forEach((linea) => console.log(linea));
+    .map((t) => `  [${t.codigo}] ${t.nombre.padEnd(15)}  ${t.tipo}`)
+    .forEach((l) => console.log(l));
 
-  // reduce con tipo explícito en acumulador
-  const totalNormal: number = historialAtendidos.reduce(
-    (acc: number, t: Turno) => (t.tipo === "Normal" ? acc + 1 : acc),
+  const totalNormal = historialAtendidos.reduce(
+    (acc, t) => acc + (t.tipo === "Normal" ? 1 : 0),
     0
   );
-  const totalPreferencial: number = historialAtendidos.reduce(
-    (acc: number, t: Turno) => (t.tipo === "Preferencial" ? acc + 1 : acc),
+  const totalPreferencial = historialAtendidos.reduce(
+    (acc, t) => acc + (t.tipo === "Preferencial" ? 1 : 0),
     0
   );
 
@@ -217,29 +191,15 @@ const verHistorial = (): void => {
 
 // ── 6. CANCELAR TURNO ────────────────────────────────────────
 const cancelarTurno = (codigoTurno: string): void => {
-  const turno: Turno | undefined = cola.find((t) => t.codigo === codigoTurno);
+  const turno = cola.find((t) => t.codigo === codigoTurno);
 
-  if (!turno) {
+  if (turno === undefined) {
     console.log(`❌ Turno ${codigoTurno} no encontrado en la cola.`);
     return;
   }
 
   cola = cola.filter((t) => t.codigo !== codigoTurno);
   console.log(`🗑️  Turno ${codigoTurno} (${turno.nombre}) cancelado.\n`);
-};
-
-// ── MENÚ ─────────────────────────────────────────────────────
-const menu = (opcion: number): void => {
-  switch (opcion) {
-    case 1: asignarTurno("Juan Pérez", "Normal"); break;
-    case 2: asignarTurno("Doña Rosa",  "Preferencial"); break;
-    case 3: verCola(); break;
-    case 4: llamarSiguiente(1); break;
-    case 5: finalizarAtencion("P-001"); break;
-    case 6: verHistorial(); break;
-    case 7: cancelarTurno("N-001"); break;
-    default: console.log("❌ Opción no válida.");
-  }
 };
 
 // ── DEMOSTRACIÓN ─────────────────────────────────────────────

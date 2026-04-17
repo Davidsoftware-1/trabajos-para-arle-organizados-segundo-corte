@@ -1,0 +1,13 @@
+{
+  "name": "simulaciones-ts",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "hotel":   "bun run src/hotelreservas.ts",
+    "cajero":  "bun run src/cajeroautomatico.ts",
+    "carrito": "bun run src/carritocompra.ts",
+    "turno":   "bun run src/digiturno.ts",
+    "boletas": "bun run src/boletaestadio.ts",
+    "all":     "bun run src/hotelreservas.ts && bun run src/cajeroautomatico.ts && bun run src/carritocompra.ts && bun run src/digiturno.ts && bun run src/boletaestadio.ts"
+  }
+}

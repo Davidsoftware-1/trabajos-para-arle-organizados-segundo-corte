@@ -1,44 +1,39 @@
+export {};
 // ============================================================
-//  SIMULACIÓN 3 — CARRITO DE COMPRAS — TypeScript
-//
-//  🔑 CAMBIOS CLAVE vs JavaScript:
-//  - interface: tipado de Producto e ItemCarrito
-//  - Tipos en parámetros con valores por defecto (cantidad = 1)
-//  - ResumenConDescuento: interfaz para el objeto que crea map()
-//  - number[] tipado explícito en los arrays intermedios
+//  SIMULACIÓN 3 — CARRITO DE COMPRAS
+//  TypeScript estricto — Compatible con Bun
 // ============================================================
 
-// ── INTERFACES ───────────────────────────────────────────────
+// ── TIPOS ────────────────────────────────────────────────────
 
 interface Producto {
-  readonly id: number;      // readonly: el id no debe cambiar
-  nombre:      string;
-  precio:      number;
-  stock:       number;      // sí cambia: disminuye al agregar al carrito
+  readonly id:     number;
+  readonly nombre: string;
+  readonly precio: number;
+  stock:           number;
 }
 
 interface ItemCarrito {
-  producto:  Producto;      // referencia al objeto del catálogo
-  cantidad:  number;
+  readonly producto: Producto;
+  cantidad:          number;
 }
 
-// Interfaz para el resultado del descuento (solo para visualización)
-interface ResumenConDescuento {
-  nombre:         string;
-  cantidad:       number;
-  precioOriginal: number;
-  precioFinal:    number;
-  ahorro:         number;
+interface ResumenDescuento {
+  readonly nombre:         string;
+  readonly cantidad:       number;
+  readonly precioOriginal: number;
+  readonly precioFinal:    number;
+  readonly ahorro:         number;
 }
 
 // ── CATÁLOGO ─────────────────────────────────────────────────
 
 const catalogo: Producto[] = [
-  { id: 1, nombre: "Camiseta", precio: 35000,  stock: 10 },
-  { id: 2, nombre: "Pantalón", precio: 80000,  stock: 5  },
-  { id: 3, nombre: "Zapatos",  precio: 120000, stock: 3  },
-  { id: 4, nombre: "Gorra",    precio: 25000,  stock: 8  },
-  { id: 5, nombre: "Medias",   precio: 8000,   stock: 20 },
+  { id: 1, nombre: "Camiseta", precio: 35_000,  stock: 10 },
+  { id: 2, nombre: "Pantalón", precio: 80_000,  stock: 5  },
+  { id: 3, nombre: "Zapatos",  precio: 120_000, stock: 3  },
+  { id: 4, nombre: "Gorra",    precio: 25_000,  stock: 8  },
+  { id: 5, nombre: "Medias",   precio: 8_000,   stock: 20 },
 ];
 
 let carrito: ItemCarrito[] = [];
@@ -48,20 +43,17 @@ let carrito: ItemCarrito[] = [];
 const formatearPrecio = (valor: number): string =>
   `$${valor.toLocaleString("es-CO")}`;
 
-// Retorna Producto | undefined → obliga a verificar antes de usar
 const buscarEnCatalogo = (id: number): Producto | undefined =>
   catalogo.find((p) => p.id === id);
 
-// Retorna ItemCarrito | undefined
 const buscarEnCarrito = (id: number): ItemCarrito | undefined =>
   carrito.find((item) => item.producto.id === id);
 
 // ── 1. AGREGAR PRODUCTO ──────────────────────────────────────
-// cantidad: number = 1 → parámetro con valor por defecto tipado
-const agregarProducto = (id: number, cantidad: number = 1): void => {
+const agregarProducto = (id: number, cantidad = 1): void => {
   const producto = buscarEnCatalogo(id);
 
-  if (!producto) {
+  if (producto === undefined) {
     console.log(`❌ Producto con id ${id} no encontrado.`);
     return;
   }
@@ -72,13 +64,11 @@ const agregarProducto = (id: number, cantidad: number = 1): void => {
 
   const itemExistente = buscarEnCarrito(id);
 
-  if (itemExistente) {
+  if (itemExistente !== undefined) {
     itemExistente.cantidad += cantidad;
     console.log(`✅ Cantidad actualizada: ${producto.nombre} x${itemExistente.cantidad}`);
   } else {
-    // ItemCarrito explícito al crear el objeto
-    const nuevoItem: ItemCarrito = { producto, cantidad };
-    carrito.push(nuevoItem);
+    carrito.push({ producto, cantidad });
     console.log(`✅ Agregado: ${producto.nombre} x${cantidad}`);
   }
 };
@@ -87,12 +77,12 @@ const agregarProducto = (id: number, cantidad: number = 1): void => {
 const quitarProducto = (id: number): void => {
   const item = buscarEnCarrito(id);
 
-  if (!item) {
+  if (item === undefined) {
     console.log(`❌ El producto con id ${id} no está en el carrito.`);
     return;
   }
 
-  carrito = carrito.filter((item) => item.producto.id !== id);
+  carrito = carrito.filter((i) => i.producto.id !== id);
   console.log(`🗑️  Eliminado: ${item.producto.nombre}`);
 };
 
@@ -104,7 +94,7 @@ const cambiarCantidad = (id: number, nuevaCantidad: number): void => {
   }
 
   const item = buscarEnCarrito(id);
-  if (!item) {
+  if (item === undefined) {
     console.log(`❌ Producto con id ${id} no está en el carrito.`);
     return;
   }
@@ -128,18 +118,16 @@ const verCarrito = (): void => {
   console.log("         🛒  MI CARRITO         ");
   console.log("════════════════════════════════");
 
-  // map retorna string[] → cada item se convierte en una línea
-  const lineas: string[] = carrito.map(
-    (item) =>
-      `  [${item.producto.id}] ${item.producto.nombre.padEnd(12)} ` +
-      `x${item.cantidad}  →  ${formatearPrecio(item.producto.precio * item.cantidad)}`
-  );
+  carrito
+    .map(
+      (item) =>
+        `  [${item.producto.id}] ${item.producto.nombre.padEnd(12)} ` +
+        `x${item.cantidad}  →  ${formatearPrecio(item.producto.precio * item.cantidad)}`
+    )
+    .forEach((l) => console.log(l));
 
-  lineas.forEach((linea) => console.log(linea));
-
-  // reduce: (acc: number, item: ItemCarrito) → acumula en number
-  const total: number = carrito.reduce(
-    (acc: number, item: ItemCarrito) => acc + item.producto.precio * item.cantidad,
+  const total = carrito.reduce(
+    (acc, item) => acc + item.producto.precio * item.cantidad,
     0
   );
 
@@ -159,7 +147,7 @@ const verCatalogo = (): void => {
       (p) =>
         `  [${p.id}] ${p.nombre.padEnd(12)}  ${formatearPrecio(p.precio).padStart(10)}  (stock: ${p.stock})`
     )
-    .forEach((linea) => console.log(linea));
+    .forEach((l) => console.log(l));
 
   console.log("════════════════════════════════\n");
 };
@@ -177,28 +165,22 @@ const aplicarDescuento = (porcentaje: number): void => {
     return;
   }
 
-  // map retorna ResumenConDescuento[] → tipo explícito en el resultado
-  const resumen: ResumenConDescuento[] = carrito.map((item) => {
-    const precioFinal  = item.producto.precio * (1 - porcentaje / 100);
-    const ahorro       = (item.producto.precio - precioFinal) * item.cantidad;
+  const resumen: ResumenDescuento[] = carrito.map((item) => {
+    const precioFinal = item.producto.precio * (1 - porcentaje / 100);
     return {
       nombre:         item.producto.nombre,
       cantidad:       item.cantidad,
       precioOriginal: item.producto.precio,
       precioFinal,
-      ahorro,
+      ahorro:         (item.producto.precio - precioFinal) * item.cantidad,
     };
   });
 
-  const totalConDescuento: number = resumen.reduce(
+  const totalConDescuento = resumen.reduce(
     (acc, item) => acc + item.precioFinal * item.cantidad,
     0
   );
-
-  const totalAhorro: number = resumen.reduce(
-    (acc, item) => acc + item.ahorro,
-    0
-  );
+  const totalAhorro = resumen.reduce((acc, item) => acc + item.ahorro, 0);
 
   console.log(`\n🏷️  Descuento del ${porcentaje}% aplicado:`);
   resumen.forEach((item) =>
@@ -212,8 +194,7 @@ const aplicarDescuento = (porcentaje: number): void => {
 
 // ── 8. FILTRAR POR PRECIO MÁXIMO ────────────────────────────
 const filtrarPorPrecio = (precioMax: number): void => {
-  // filter retorna Producto[] (no ItemCarrito[])
-  const accesibles: Producto[] = catalogo.filter((p) => p.precio <= precioMax);
+  const accesibles = catalogo.filter((p) => p.precio <= precioMax);
 
   if (accesibles.length === 0) {
     console.log(`\n❌ No hay productos por debajo de ${formatearPrecio(precioMax)}.`);
@@ -227,24 +208,9 @@ const filtrarPorPrecio = (precioMax: number): void => {
   console.log();
 };
 
-// ── MENÚ ─────────────────────────────────────────────────────
-const menu = (opcion: number): void => {
-  switch (opcion) {
-    case 1: verCatalogo(); break;
-    case 2: verCarrito(); break;
-    case 3: agregarProducto(1, 2); break;
-    case 4: quitarProducto(1); break;
-    case 5: cambiarCantidad(2, 3); break;
-    case 6: aplicarDescuento(10); break;
-    case 7: filtrarPorPrecio(50000); break;
-    case 8: vaciarCarrito(); break;
-    default: console.log("❌ Opción no válida.");
-  }
-};
-
 // ── DEMOSTRACIÓN ─────────────────────────────────────────────
 console.log("╔══════════════════════════════════╗");
-console.log("║    SIMULACIÓN: CARRITO DE COMPRAS ║");
+console.log("║   SIMULACIÓN: CARRITO DE COMPRAS ║");
 console.log("╚══════════════════════════════════╝\n");
 
 console.log("--- Ver catálogo ---");
@@ -265,7 +231,7 @@ console.log("--- Aplicar descuento del 15% ---");
 aplicarDescuento(15);
 
 console.log("--- Filtrar productos hasta $40.000 ---");
-filtrarPorPrecio(40000);
+filtrarPorPrecio(40_000);
 
 console.log("--- Quitar Zapatos del carrito ---");
 quitarProducto(3);
